@@ -1,0 +1,105 @@
+From d52d29f3a561fba65d6cb945cdb72da25ae01357 Mon Sep 17 00:00:00 2001
+From: Shrey Tyagi <shreytyagi18@gmail.com>
+Date: Wed, 10 Jun 2020 03:44:48 +0530
+Subject: [PATCH] Create Patch File
+
+---
+ src/App.tsx   | 20 ++++++++++++++------
+ src/Graph.tsx | 13 ++++++++++++-
+ 2 files changed, 26 insertions(+), 7 deletions(-)
+
+diff --git a/src/App.tsx b/src/App.tsx
+index 0728518..ba264e3 100755
+--- a/src/App.tsx
++++ b/src/App.tsx
+@@ -8,6 +8,7 @@ import './App.css';
+  */
+ interface IState {
+   data: ServerRespond[],
++  showGraph: boolean,
+ }
+ 
+ /**
+@@ -22,6 +23,7 @@ class App extends Component<{}, IState> {
+       // data saves the server responds.
+       // We use this state to parse data down to the child element (Graph) as element property
+       data: [],
++      showGraph: false,
+     };
+   }
+ 
+@@ -29,20 +31,26 @@ class App extends Component<{}, IState> {
+    * Render Graph react component with state.data parse as property data
+    */
+   renderGraph() {
+-    return (<Graph data={this.state.data}/>)
++    if(this.state.showGraph){
++      return (<Graph data={this.state.data}/>)
++    }
+   }
+ 
+   /**
+    * Get new data from server and update the state with the new data
+    */
+   getDataFromServer() {
+-    DataStreamer.getData((serverResponds: ServerRespond[]) => {
+-      // Update the state by creating a new array of data that consists of
+-      // Previous data in the state and the new data from server
+-      this.setState({ data: [...this.state.data, ...serverResponds] });
++    let x = 0;
++    const interval = setInterval(()) => {
++      DataStreamer.getData((serverResponds: ServerRespond[]) => {
++        this.setState({ data: serverResponds, showGraph:true,});
+     });
++    x++;
++    if (x > 1000){
++      clearInterval(interval);
++    }
++  }, 100);
+   }
+-
+   /**
+    * Render the App react component
+    */
+diff --git a/src/Graph.tsx b/src/Graph.tsx
+index ec1430e..5580f38 100644
+--- a/src/Graph.tsx
++++ b/src/Graph.tsx
+@@ -10,11 +10,12 @@ interface IProps {
+   data: ServerRespond[],
+ }
+ 
++
+ /**
+  * Perspective library adds load to HTMLElement prototype.
+  * This interface acts as a wrapper for Typescript compiler.
+  */
+-interface PerspectiveViewerElement {
++interface PerspectiveViewerElement extends HTMLElement {
+   load: (table: Table) => void,
+ }
+ 
+@@ -49,10 +50,20 @@ class Graph extends Component<IProps, {}> {
+ 
+       // Add more Perspective configurations here.
+       elem.load(this.table);
++      elem.setAttribute('view', 'y_line');
++      elem.setAttribute('column-pivots', '["stock"]');
++      elem.setAttribute('row-pivots', '["timestamp"]');
++      elem.setAttribute('columns', '["top_ask_price"]');
++      elem.setAttribute('aggreates',`
++      {"stock":"distinct count",
++      "top_ask_price":"avg",
++      "top_bid_price":"avg",
++      "timestamp":"distinct count"}`);
+     }
+   }
+ 
+   componentDidUpdate() {
++    const elem = document.getElementsByTagName('persepctive-viewer')[0] as unknown as PerspectiveViewerElement;
+     // Everytime the data props is updated, insert the data into Perspective table
+     if (this.table) {
+       // As part of the task, you need to fix the way we update the data props to
+-- 
+2.18.0.windows.1
+
